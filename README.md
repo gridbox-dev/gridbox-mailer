@@ -16,6 +16,15 @@
 
 `Gridbox Mailer` is a flexible and easy-to-use package for managing email sending with `nodemailer`. It allows you to easily connect to an SMTP server, load and customize HTML email templates, and send emails with attachments. It handles the connection management, template processing, and email sending processes in a streamlined way.
 
+## Table of Contents
+
+- [Gridbox Mailer](#gridbox-mailer)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Example of use](#example-of-use)
+  - [License](#license)
+
 ## [Features](#features)
 
 - ### SMTP Connection:
@@ -81,6 +90,6 @@ const sendEmail = async () => {
 sendEmail();
 ```
 
-## License
+## [License](#license)
 
 MIT
