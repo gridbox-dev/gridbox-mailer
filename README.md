@@ -1,8 +1,22 @@
+<div style="display: flex; gap: 10px;">
+	<a href='https://www.gridbox.dev' target='_blank'>
+  		<img src="https://img.shields.io/badge/Developed%20by-Gridbox-black?labelColor=gray&style=flat" alt="Developed by">
+	</a>
+	<a href='https://cl.linkedin.com/in/tdelrealb' target='_blank'>
+  		<img src="https://img.shields.io/badge/Developed%20by-Tom%C3%A1s%20del%20Real%20B.-red?labelColor=gray&style=flat" alt="Developed by">
+	</a>
+	<a href='https://choosealicense.com/licenses/mit/' target='_blank'>
+  	<img src="https://img.shields.io/badge/License-MIT-green?labelColor=gray&style=flat"  alt="License"/>
+	</a>
+</div>
+
+<br>
+
 # Gridbox Mailer
 
 `Gridbox Mailer` is a flexible and easy-to-use package for managing email sending with `nodemailer`. It allows you to easily connect to an SMTP server, load and customize HTML email templates, and send emails with attachments. It handles the connection management, template processing, and email sending processes in a streamlined way.
 
-## Features
+## [Features](#features)
 
 - ### SMTP Connection:
 
@@ -19,7 +33,7 @@
 - ### Centralized Connection Management:
   Automatically manage email client connection, including connection and disconnection handling.
 
-## Installation
+## [Installation](#installation)
 
 Run the following command in the main directory of your application:
 
@@ -27,7 +41,7 @@ Run the following command in the main directory of your application:
 npm install gridbox-mailer
 ```
 
-## Usage
+## [Example of use](#example)
 
 This is a basic and explanatory example of the use of `Gridbox Mailer`, feel free to use it wherever you want.
 
