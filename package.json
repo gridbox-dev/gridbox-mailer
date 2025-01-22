@@ -1,0 +1,39 @@
+{
+  "name": "gridbox-mailer",
+  "version": "0.0.1",
+  "description": "Send mails in a simple way through Gridbox mailer.",
+  "author": {
+    "name": "Gridbox",
+    "url": "https://gridbox.dev"
+  },
+  "repository": {
+    "url": "https://github.com/gridbox-dev/gridbox-mailer"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts"
+  },
+  "keywords": [
+    "email",
+    "mailer",
+    "gridbox",
+    "node",
+    "nodemailer",
+    "email sender"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.17",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}

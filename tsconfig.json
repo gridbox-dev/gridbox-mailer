@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "Node16",
+    "lib": ["ESNext"],
+    "allowJs": true,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "Node16",
+    "typeRoots": ["@types", "./node_modules/@types", "./src/types"],
+    "sourceMap": true,
+    "removeComments": true,
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "skipDefaultLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "@/*": ["*"]
+    }
+  },
+  "include": ["src/**/*", "@types/express.d.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules", "dist", "client"]
+}
