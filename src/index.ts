@@ -1,2 +1,2 @@
-export * from "./client";
+export { emailClient } from "./client";
 export * from "./types";

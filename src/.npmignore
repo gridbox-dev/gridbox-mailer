@@ -4,5 +4,5 @@
 .env
 .DS_Store
 
-tsconfig.sjon
+tsconfig.json
 tsup.config.ts

@@ -4,7 +4,7 @@ import fs from "fs";
 
 import { IEmailClientTransporter, IEmailTemplate, ISendEmail } from "./types";
 
-class emailClient {
+export class emailClient {
   private static transporter: Transporter | null = null;
   private static user: string | null = null;
 
@@ -118,5 +118,3 @@ class emailClient {
     }
   }
 }
-
-export { emailClient };
