@@ -12,17 +12,18 @@
 
 <br>
 
-# Gridbox Mailer
+# [Gridbox Mailer](#gridbox-mailer)
 
 `Gridbox Mailer` is a flexible and easy-to-use package for managing email sending with `nodemailer`. It allows you to easily connect to an SMTP server, load and customize HTML email templates, and send emails with attachments. It handles the connection management, template processing, and email sending processes in a streamlined way.
 
-## Table of Contents
+## [Table of Contents](#table-of-contents)
 
 - [Gridbox Mailer](#gridbox-mailer)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Installation](#installation)
-  - [Example of use](#example-of-use)
+  - [Example of Use](#example-of-use)
+    - [Directory Structure Example](#directory-structure-example)
   - [License](#license)
 
 ## [Features](#features)
@@ -31,7 +32,7 @@
 
   Easily connect to an SMTP server using the provided credentials.
 
-- ### HTML Template Loading:
+- ### Load HTML Email Templates:
 
   Load HTML email templates from a specified directory and replace dynamic placeholders with custom values.
 
@@ -50,9 +51,9 @@ Run the following command in the main directory of your application:
 npm install gridbox-mailer
 ```
 
-## [Example of use](#example)
+## [Example of Use](#example-of-use)
 
-This is a basic and explanatory example of the use of `Gridbox Mailer`, feel free to use it wherever you want.
+Here’s a basic example of using `Gridbox Mailer`. You can adapt this to your specific use case.
 
 ```ts
 import { emailClient } from "gridbox-mailer";
@@ -66,10 +67,10 @@ const sendEmail = async () => {
   });
 
   const emailContent = emailSender.loadHTMLTemplate({
-    templateBasePath: "./templates", // The path where you store mail templates.
-    templateName: "welcome-template", // The name of your template.
+    templateBasePath: "./templates", // Path where email templates are stored
+    templateName: "welcome-template", // Template name
     replacements: {
-      name: "John Doe",
+      name: "John Doe", // Placeholder replacements
     },
   });
 
@@ -81,7 +82,7 @@ const sendEmail = async () => {
       {
         filename: "logo.png", // File name to attach
         cid: "logo", // Content ID in email template
-        attachmentBasePath: "./templates/assets", // The path where you store the attachment.
+        attachmentBasePath: "./templates/assets", // Path to attachments
       },
     ],
   });
@@ -90,6 +91,15 @@ const sendEmail = async () => {
 sendEmail();
 ```
 
-## [License](#license)
+### [Directory Structure Example](#directory-structure-example)
+
+```
+./templates
+├── welcome-template.html
+└── assets
+    └── logo.png
+```
+
+## License
 
 MIT
