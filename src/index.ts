@@ -1,2 +1,1 @@
-export { emailClient } from "./client";
-export * from "./types";
+export { default as GridboxMailer } from "./gridbox-mailer";
