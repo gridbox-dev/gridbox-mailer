@@ -1,1 +1,4 @@
-export { default as GridboxMailer } from "./gridbox-mailer";
+import { GridboxMailer } from './gridbox-mailer';
+
+export { GridboxMailer } from './gridbox-mailer';
+export default GridboxMailer;
