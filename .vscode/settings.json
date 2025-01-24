@@ -1,3 +1,3 @@
 {
-	"exportall.config.folderListener": ["/src/types"]
+	"exportall.config.folderListener": ["/src/types", "/src/lib"]
 }
