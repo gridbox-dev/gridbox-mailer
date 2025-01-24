@@ -1,98 +1,268 @@
 'use strict';
-import { SMTPTransporter } from '@/transporters';
 
-import { GridboxMailerConfig, SMTPTransporterConfig } from '@/types';
+import { createTransport, SendMailOptions, Transporter } from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { v4 as uuid } from 'uuid';
+import { log } from '@/lib';
+
+import { TransporterConfig, AllowedPort, ConnectionMetadata } from '@/types';
+import { CustomError, ErrorHandler } from '@/errors';
 
 export class GridboxMailer {
-	private static smtp: SMTPTransporter | null = null;
+	private static connections: Map<string, { metadata: ConnectionMetadata; transporter: Transporter }> = new Map();
+	private static currentConnection: Transporter | null = null;
 
-	public static async connect<T extends GridboxMailerConfig['transporter']>(options: {
-		transporter: T;
-		config: Extract<GridboxMailerConfig, { transporter: T }>['config'];
-	}): Promise<GridboxMailer> {
-		switch (options.transporter) {
-			// case 'gmail':
-			// 	const gmailConfig = options.config as GmailTransporterConfig;
-			// 	console.log(gmailConfig);
-			// 	break;
+	constructor() {}
 
-			// case 'mailchimp':
-			// 	const mailchimpConfig = options.config as MailchimpTransporterConfig;
-			// 	console.log(mailchimpConfig);
-			// 	break;
+	// Connection management
 
-			// case 'mailgun':
-			// 	const mailgunConfig = options.config as MailgunTransporterConfig;
-			// 	console.log(mailgunConfig);
-			// 	break;
+	public async connect(config: TransporterConfig): Promise<void> {
+		GridboxMailer.validateConfiguration(config);
 
-			// case 'sendgrid':
-			// 	const sendgridConfig = options.config as SendgridTransporterConfig;
-			// 	console.log(sendgridConfig);
-			// 	break;
+		const { host, port, credentials, logging = false } = config;
 
-			case 'smtp':
-				if (GridboxMailer.smtp) {
-					return new Proxy(new GridboxMailer(), this.proxyHandler());
-				}
-
-				const smtpConfig = options.config as SMTPTransporterConfig;
-				const smtp = await SMTPTransporter.connect(smtpConfig);
-
-				GridboxMailer.smtp = smtp;
-				return new Proxy(new GridboxMailer(), this.proxyHandler());
-
-			default:
-				throw new Error(`Transporter ${options.transporter} does not exist.`);
-		}
-	}
-
-	public getConnection(transporter: GridboxMailerConfig['transporter']) {
-		switch (transporter) {
-			case 'smtp':
-				if (!GridboxMailer.smtp) {
-					throw new Error('SMTP Transporter connection not found. Please connect first.');
-				}
-
-				return GridboxMailer.smtp?.getConnection();
-
-			default:
-				throw new Error(`Transporter ${transporter} does not exist.`);
-		}
-	}
-
-	public disconnect(transporter: GridboxMailerConfig['transporter']): void {
-		switch (transporter) {
-			case 'smtp':
-				if (GridboxMailer.smtp) {
-					GridboxMailer.smtp.disconnect();
-					GridboxMailer.smtp = null;
-				}
-
-				break;
-
-			default:
-				throw new Error(`Transporter ${transporter} does not exist.`);
-		}
-	}
-
-	private static proxyHandler() {
-		return {
-			get(target: any, prop: string | symbol) {
-				if (prop === 'getConnection') {
-					return target.getConnection.bind(target);
-				}
-
-				if (prop === 'disconnect') {
-					return target.disconnect.bind(target);
-				}
-
-				if (prop === 'then') {
-					return undefined;
-				}
-
-				throw new Error(`Property ${String(prop)} does not exist.`);
+		const transporterOptions: SMTPTransport.Options = {
+			host: host,
+			port: GridboxMailer.formatPort(port),
+			secure: port === 'secure',
+			auth: {
+				user: credentials.username,
+				pass: credentials.password,
 			},
 		};
+
+		try {
+			const transporter = createTransport(transporterOptions);
+
+			const connectionMetadata = GridboxMailer.generateConnectionMetadata(
+				host,
+				transporterOptions.port!,
+				transporterOptions.secure!,
+			);
+
+			GridboxMailer.connections.set(connectionMetadata.id, {
+				metadata: connectionMetadata,
+				transporter,
+			});
+
+			GridboxMailer.currentConnection = transporter;
+
+			if (logging) {
+				log.neutral(`Connection established on ${host} with ID: ${connectionMetadata.id}`);
+			}
+		} catch (error) {
+			ErrorHandler.handle(
+				CustomError.SMTPConnectionError('Failed to establish SMTP connection', { host, port, credentials }),
+			);
+		}
 	}
+
+	public getCurrentConnection(): Transporter | null {
+		if (GridboxMailer.currentConnection) {
+			const connectionId = GridboxMailer.getConnectionId(GridboxMailer.currentConnection);
+
+			if (connectionId === undefined) {
+				const errorMessage = 'Connection ID could not be found for the current transporter.';
+				ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+				return null;
+			}
+
+			const currentMetadata = GridboxMailer.connections.get(connectionId)?.metadata;
+
+			if (currentMetadata) {
+				console.table([currentMetadata]);
+			}
+
+			return GridboxMailer.currentConnection;
+		}
+
+		const errorMessage = 'No active SMTP connection found. Use the `connect` method to establish a connection.';
+		ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+		return null;
+	}
+
+	public listConnections(): void {
+		if (GridboxMailer.connections.size === 0) {
+			log.info('No active connections.');
+			return;
+		}
+
+		const connectionsMetadata = Array.from(GridboxMailer.connections.values()).map(({ metadata }) => metadata);
+
+		console.table(connectionsMetadata);
+	}
+
+	public useConnection(connectionId: string): void {
+		const connection = GridboxMailer.connections.get(connectionId);
+
+		if (!connection) {
+			const errorMessage = `No connection found with ID: ${connectionId}. Use the \`listConnections\` method to see available connections.`;
+			ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+			return;
+		}
+
+		GridboxMailer.currentConnection = connection.transporter;
+		log.neutral(`Switched to connection with ID: ${connectionId}`);
+	}
+
+	public async killConnection(connectionId?: string): Promise<void> {
+		let connectionToKill: Transporter | null = null;
+
+		if (connectionId) {
+			const connection = GridboxMailer.connections.get(connectionId);
+
+			if (!connection) {
+				const errorMessage = `No connection found with ID: ${connectionId}. Please use the \`listConnections\` method to view available connections.`;
+				ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+				return;
+			}
+
+			connectionToKill = connection.transporter;
+		} else {
+			if (!GridboxMailer.currentConnection) {
+				const errorMessage =
+					'No active SMTP connection found. Please use the `connect` method to establish a connection first.';
+				ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+				return;
+			}
+
+			connectionToKill = GridboxMailer.currentConnection;
+		}
+
+		const connectionIdToKill = GridboxMailer.getConnectionId(connectionToKill);
+
+		if (!connectionIdToKill) {
+			const errorMessage = 'Connection ID could not be found for the connection to close.';
+			ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+			return;
+		}
+
+		try {
+			await connectionToKill.close();
+			log.neutral(`Connection with ID: ${connectionIdToKill} has been successfully closed.`);
+
+			GridboxMailer.connections.delete(connectionIdToKill);
+
+			if (!connectionId) {
+				GridboxMailer.currentConnection = null;
+			}
+		} catch (error) {
+			const errorMessage = `Failed to close connection with ID: ${connectionIdToKill}. Ensure the connection is not in use and try again.`;
+			ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+		}
+	}
+
+	public async killAllConnections() {
+		if (GridboxMailer.connections.size === 0) {
+			log.info('No active connections to close.');
+			return;
+		}
+
+		for (let [connectionId, { transporter }] of GridboxMailer.connections.entries()) {
+			try {
+				await transporter.close();
+				console.log(`Connection with ID: ${connectionId} has been successfully closed.`);
+
+				GridboxMailer.connections.delete(connectionId);
+			} catch (error) {
+				const errorMessage = `Failed to close connection with ID: ${connectionId}. Ensure the connection is not in use and try again.`;
+				ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+			}
+		}
+
+		if (GridboxMailer.connections.size === 0) {
+			GridboxMailer.currentConnection = null;
+			log.info('All active connections have been closed.');
+		}
+	}
+
+	// Mail management
+
+	public async send() {}
+
+	public async sendBatch() {}
+
+	public async scheduleSend() {}
+
+	public async getScheduledEmails() {}
+
+	public async cancelScheduleSend() {}
+
+	public async previewEmail() {}
+
+	// Utilities
+
+	public static validateEmail() {}
+
+	public async loadHTMLTemplate() {}
+
+	public async addCustomHeader() {}
+
+	public async removeCustomHeader() {}
+
+	public async isHealthy() {}
+
+	public async setRateLimit() {}
+
+	public async handleQueue() {}
+
+	// Handlers
+
+	private static validateConfiguration(config: TransporterConfig): void {
+		try {
+			if (!config.host) {
+				throw CustomError.ConfigurationError('Missing SMTP host.');
+			} else if (!config.port) {
+				throw CustomError.ConfigurationError('Missing SMTP port.');
+			} else if (!config.credentials.username) {
+				throw CustomError.ConfigurationError('Missing SMTP username.');
+			} else if (!config.credentials.password) {
+				throw CustomError.ConfigurationError('Missing SMTP password.');
+			}
+		} catch (error) {
+			if (error instanceof CustomError) {
+				ErrorHandler.handle(error);
+			}
+		}
+	}
+
+	private static async retrySend() {}
+
+	private static proxyHandler() {}
+
+	private static generateConnectionMetadata(host: string, port: AllowedPort, secure: boolean): ConnectionMetadata {
+		const metadata: ConnectionMetadata = {
+			id: `${host}:${port}:${secure ? 'secure' : 'tls'}`,
+			host: host,
+			port: port,
+			secure: secure,
+			createdAt: new Date(),
+		};
+
+		return metadata;
+	}
+
+	private static getConnectionId(transporter: Transporter): string | undefined {
+		for (let [id, { transporter: conn }] of GridboxMailer.connections.entries()) {
+			if (conn === transporter) {
+				return id;
+			}
+		}
+		return undefined;
+	}
+
+	private static formatPort(port: AllowedPort) {
+		switch (port) {
+			case 'secure':
+				return 465;
+			case 'tls':
+				return 587;
+			default:
+				return port;
+		}
+	}
+
+	private static loadAttachments() {}
+
+	private static validateAttachments() {}
 }
