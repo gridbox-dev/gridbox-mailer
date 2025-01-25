@@ -27,3 +27,11 @@ export type EmailSentResponse = {
 	message: string;
 	messageId?: string;
 };
+
+export type HTMLTemplate = {
+	basePath: string;
+	filename: string;
+	replacements?: HTMLReplacement;
+};
+
+export type HTMLReplacement = Record<string, any>;

@@ -1,6 +1,9 @@
 'use strict';
 
 import { createTransport, SendMailOptions, Transporter } from 'nodemailer';
+import path from 'path';
+import fs from 'fs';
+import handlebars from 'handlebars';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { log } from '@/lib';
 
@@ -11,16 +14,16 @@ import {
 	EmailOptions,
 	EmailAttachment,
 	EmailSentResponse,
+	HTMLTemplate,
 } from '@/types';
 import { CustomError, ErrorHandler } from '@/errors';
 
 export class GridboxMailer {
 	private static connections: Map<string, { metadata: ConnectionMetadata; transporter: Transporter }> = new Map();
+	private static templateCache: Map<string, Handlebars.TemplateDelegate> = new Map();
 	private static currentConnection: Transporter | null = null;
 
 	constructor() {}
-
-	// Connection management
 
 	public async connect(config: TransporterConfig): Promise<void> {
 		GridboxMailer.validateConfiguration(config);
@@ -30,7 +33,7 @@ export class GridboxMailer {
 		const transporterOptions: SMTPTransport.Options = {
 			host: host,
 			port: GridboxMailer.formatPort(port),
-			secure: port === 'secure',
+			secure: port === 'secure' || port === 465,
 			auth: {
 				user: credentials.username,
 				pass: credentials.password,
@@ -44,6 +47,7 @@ export class GridboxMailer {
 				host,
 				transporterOptions.port!,
 				transporterOptions.secure!,
+				credentials.username,
 			);
 
 			GridboxMailer.connections.set(connectionMetadata.id, {
@@ -60,6 +64,8 @@ export class GridboxMailer {
 			ErrorHandler.handle(
 				CustomError.SMTPConnectionError('Failed to establish SMTP connection', { host, port, credentials }),
 			);
+
+			return;
 		}
 	}
 
@@ -155,6 +161,7 @@ export class GridboxMailer {
 		} catch (error) {
 			const errorMessage = `Failed to close connection with ID: ${connectionIdToKill}. Ensure the connection is not in use and try again.`;
 			ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+			return;
 		}
 	}
 
@@ -173,6 +180,7 @@ export class GridboxMailer {
 			} catch (error) {
 				const errorMessage = `Failed to close connection with ID: ${connectionId}. Ensure the connection is not in use and try again.`;
 				ErrorHandler.handle(CustomError.SMTPConnectionError(errorMessage));
+				return;
 			}
 		}
 
@@ -181,8 +189,6 @@ export class GridboxMailer {
 			log.info('All active connections have been closed.');
 		}
 	}
-
-	// Mail management
 
 	public async send(emailOptions: EmailOptions): Promise<EmailSentResponse> {
 		if (!GridboxMailer.currentConnection) {
@@ -297,16 +303,6 @@ export class GridboxMailer {
 		return responses;
 	}
 
-	public async scheduleSend() {}
-
-	public async getScheduledEmails() {}
-
-	public async cancelScheduleSend() {}
-
-	public async previewEmail() {}
-
-	// Utilities
-
 	public static validateEmail(email: string | string[]): boolean {
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -317,19 +313,40 @@ export class GridboxMailer {
 		return emailRegex.test(email);
 	}
 
-	public async loadHTMLTemplate() {}
+	public async loadHTMLTemplate(content: HTMLTemplate): Promise<string> {
+		if (!content.basePath || !content.filename) {
+			const errorMessage = 'Base path and filename are required to load HTML template.';
+			ErrorHandler.handle(CustomError.HTMLTemplateError(errorMessage));
+			throw CustomError.HTMLTemplateError(errorMessage);
+		}
 
-	public async addCustomHeader() {}
+		const templateKey = `${content.basePath}/${content.filename}.html`;
 
-	public async removeCustomHeader() {}
+		if (GridboxMailer.templateCache.has(templateKey)) {
+			const cachedTemplate = GridboxMailer.templateCache.get(templateKey);
+			return cachedTemplate!(content.replacements || {});
+		}
 
-	public async isHealthy() {}
+		const templatePath = path.join(content.basePath, `${content.filename}.html`);
 
-	public async setRateLimit() {}
+		try {
+			const templateFile = fs.readFileSync(templatePath, 'utf8');
+			const compiledTemplate = handlebars.compile(templateFile);
 
-	public async handleQueue() {}
+			GridboxMailer.templateCache.set(templateKey, compiledTemplate);
 
-	// Handlers
+			return compiledTemplate(content.replacements || {});
+		} catch (error) {
+			const errorMessage = `Error loading HTML template: ${error instanceof Error ? error.message : error}`;
+			ErrorHandler.handle(CustomError.HTMLTemplateError(errorMessage));
+			throw CustomError.HTMLTemplateError(errorMessage);
+		}
+	}
+
+	public static clearTemplateCache(): void {
+		GridboxMailer.templateCache.clear();
+		console.log('Template cache cleared.');
+	}
 
 	private static validateConfiguration(config: TransporterConfig): void {
 		try {
@@ -345,7 +362,10 @@ export class GridboxMailer {
 		} catch (error) {
 			if (error instanceof CustomError) {
 				ErrorHandler.handle(error);
+				return;
 			}
+
+			throw CustomError.EmailValidationError('Invalid email configuration.');
 		}
 	}
 
@@ -381,11 +401,14 @@ export class GridboxMailer {
 		return { success: false, status: 500, message: errorMessage };
 	}
 
-	private static proxyHandler() {}
-
-	private static generateConnectionMetadata(host: string, port: AllowedPort, secure: boolean): ConnectionMetadata {
+	private static generateConnectionMetadata(
+		host: string,
+		port: AllowedPort,
+		secure: boolean,
+		username: string,
+	): ConnectionMetadata {
 		const metadata: ConnectionMetadata = {
-			id: `${host}:${port}:${secure ? 'secure' : 'tls'}`,
+			id: `${host}:${port}:${username}${secure ? ':secure' : ''}`,
 			host: host,
 			port: port,
 			secure: secure,
