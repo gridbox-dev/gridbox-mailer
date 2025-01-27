@@ -1,9 +1,9 @@
-/src
-/node_modules
-
-.env
-.DS_Store
-/.vscode
-
-tsconfig.json
+src/
+tests/
+*.config.js
+*.config.cjs
+*.config.mjs
+.eslint*
+.prettier*
+tsconfig*.json
 tsup.config.ts

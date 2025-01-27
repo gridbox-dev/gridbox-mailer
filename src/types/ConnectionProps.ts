@@ -4,5 +4,4 @@ export type ConnectionProps = {
 	host: string;
 	port: AllowedPort;
 	credentials: UserCredentials;
-	logging?: boolean;
 };
