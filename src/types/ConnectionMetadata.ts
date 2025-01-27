@@ -1,9 +1,7 @@
-import { AllowedPort } from './allowed-port';
-
 export type ConnectionMetadata = {
 	id: string;
 	host: string;
-	port: AllowedPort;
+	port: number;
 	secure: boolean;
 	createdAt: Date;
 };

@@ -1,6 +1,6 @@
 import { AllowedPort, UserCredentials } from '@/types';
 
-export type TransporterConfig = {
+export type ConnectionProps = {
 	host: string;
 	port: AllowedPort;
 	credentials: UserCredentials;

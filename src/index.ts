@@ -1,4 +1,4 @@
-import { GridboxMailer } from './gridbox-mailer';
+import { GridboxMailer } from './client/gridbox-mailer';
 
-export { GridboxMailer } from './gridbox-mailer';
+export { GridboxMailer };
 export default GridboxMailer;
