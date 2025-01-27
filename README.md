@@ -16,7 +16,7 @@
 
 `Gridbox Mailer` is a flexible and easy-to-use Node.js package that simplifies SMTP connection management and email sending using Nodemailer. It allows you to easily connect to an SMTP server, load and customize HTML email templates, and send emails with attachments. It handles the connection management, template processing, and email sending processes in a streamlined way.
 
-<img src='./example.png' alt='Usage example of Gridbox Mailer'/>
+<img src='https://ibb.co/Ydrw0Q3' alt='Usage example of Gridbox Mailer'/>
 
 ## Features
 
