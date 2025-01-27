@@ -332,3 +332,15 @@ const mailer = new GridboxMailer();
 	}
 })();
 ```
+
+# Contributing
+
+Feel free to open issues or submit pull requests to improve Gridbox Mailer. **Contributions are welcome!**
+
+# License
+
+This project is licensed under the `MIT license`.
+
+#
+
+We hope Gridbox Mailer will make your tasks related to sending emails easier!
