@@ -10,6 +10,13 @@
 	</a>
 </div>
 
+
+
+<br>
+
+[![npm version](https://img.shields.io/npm/v/gridbox-mailer.svg)](https://www.npmjs.com/package/gridbox-mailer)
+[![npm downloads](https://img.shields.io/npm/dm/gridbox-mailer.svg)](https://www.npmjs.com/package/gridbox-mailer)
+
 <br>
 
 # Gridbox Mailer
