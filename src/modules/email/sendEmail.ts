@@ -3,7 +3,7 @@ import { validateEmail, loadAttachments, retrySend } from '@/modules';
 import { SendMailOptions } from 'nodemailer';
 
 export const sendEmail = async (props: EmailUtilityProps): Promise<EmailSentResponse> => {
-	const fieldsToValidate = [props.from, props.to];
+	const fieldsToValidate = [props.to];
 
 	if (props.cc) fieldsToValidate.push(...props.cc);
 	if (props.bcc) fieldsToValidate.push(...props.bcc);
